@@ -156,6 +156,7 @@ public:
 
   /// Re-initialize PreintegratedCombinedMeasurements
   void resetIntegration() override;
+  void setCov(const Matrix9& incov){preintMeasCov_.block<9,9>(0,0) = incov;}
 
   /// const reference to params, shadows definition in base class
   Params& p() const { return *boost::static_pointer_cast<Params>(this->p_);}

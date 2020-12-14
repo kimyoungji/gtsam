@@ -694,9 +694,9 @@ namespace gtsam {
       { throw std::invalid_argument("unwhiten is not currently supported for robust noise models."); }
       // Fold the use of the m-estimator residual(...) function into distance(...)
       inline virtual double distance(const Vector& v) const
-      { return robust_->residual(this->unweightedWhiten(v).norm()); }
+      { return robust_->residual(this->unweightedWhiten(v)); }
       inline virtual double distance_non_whitened(const Vector& v) const
-      { return robust_->residual(v.norm()); }
+      { return robust_->residual(v); }
       // TODO: these are really robust iterated re-weighting support functions
       virtual void WhitenSystem(Vector& b) const;
       virtual void WhitenSystem(std::vector<Matrix>& A, Vector& b) const;

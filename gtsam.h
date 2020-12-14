@@ -1454,7 +1454,7 @@ virtual class Null: gtsam::noiseModel::mEstimator::Base {
   void serializable() const;
 
   double weight(double error) const;
-  double residual(double error) const;
+  double residual(const Vector error) const;
 };
 
 virtual class Fair: gtsam::noiseModel::mEstimator::Base {
@@ -1465,7 +1465,7 @@ virtual class Fair: gtsam::noiseModel::mEstimator::Base {
   void serializable() const;
 
   double weight(double error) const;
-  double residual(double error) const;
+  double residual(const Vector error) const;
 };
 
 virtual class Huber: gtsam::noiseModel::mEstimator::Base {
@@ -1476,7 +1476,7 @@ virtual class Huber: gtsam::noiseModel::mEstimator::Base {
   void serializable() const;
 
   double weight(double error) const;
-  double residual(double error) const;
+  double residual(const Vector error) const;
 };
 
 virtual class Cauchy: gtsam::noiseModel::mEstimator::Base {
@@ -1487,7 +1487,7 @@ virtual class Cauchy: gtsam::noiseModel::mEstimator::Base {
   void serializable() const;
 
   double weight(double error) const;
-  double residual(double error) const;
+  double residual(const Vector error) const;
 };
 
 virtual class Tukey: gtsam::noiseModel::mEstimator::Base {
@@ -1498,7 +1498,7 @@ virtual class Tukey: gtsam::noiseModel::mEstimator::Base {
   void serializable() const;
 
   double weight(double error) const;
-  double residual(double error) const;
+  double residual(const Vector error) const;
 };
 
 virtual class Welsch: gtsam::noiseModel::mEstimator::Base {
@@ -1509,7 +1509,7 @@ virtual class Welsch: gtsam::noiseModel::mEstimator::Base {
   void serializable() const;
 
   double weight(double error) const;
-  double residual(double error) const;
+  double residual(const Vector error) const;
 };
 
 virtual class GemanMcClure: gtsam::noiseModel::mEstimator::Base {
@@ -1520,7 +1520,7 @@ virtual class GemanMcClure: gtsam::noiseModel::mEstimator::Base {
   void serializable() const;
 
   double weight(double error) const;
-  double residual(double error) const;
+  double residual(const Vector error) const;
 };
 
 virtual class DCS: gtsam::noiseModel::mEstimator::Base {
@@ -1531,7 +1531,19 @@ virtual class DCS: gtsam::noiseModel::mEstimator::Base {
   void serializable() const;
 
   double weight(double error) const;
-  double residual(double error) const;
+  double residual(const Vector error) const;
+};
+
+virtual class PairDCS: gtsam::noiseModel::mEstimator::Base {
+  PairDCS(double c);
+  static gtsam::noiseModel::mEstimator::PairDCS* Create(double c);
+
+  // enabling serialization functionality
+  void serializable() const;
+
+  double weight(double error) const;
+  Vector pairweight(Vector& error) const;
+  double residual(const Vector error) const;
 };
 
 virtual class L2WithDeadZone: gtsam::noiseModel::mEstimator::Base {
@@ -1542,7 +1554,7 @@ virtual class L2WithDeadZone: gtsam::noiseModel::mEstimator::Base {
   void serializable() const;
 
   double weight(double error) const;
-  double residual(double error) const;
+  double residual(const Vector error) const;
 };
 
 }///\namespace mEstimator
@@ -3064,6 +3076,30 @@ virtual class GPSFactor2 : gtsam::NonlinearFactor {
 
   // Standard Interface
   gtsam::Point3 measurementIn() const;
+};
+
+//virtual class GPSFactor3D : gtsam::NonlinearFactor{
+//  GPSFactor3D(size_t key1, double x, double y, double z,
+//            const gtsam::noiseModel::Base* model);
+
+//};
+
+virtual class GPSFactorPair3D : gtsam::NonlinearFactor{
+  GPSFactorPair3D(size_t key1, const gtsam::Point3& gpsIn, const gtsam::Point3& vpsIn,
+            const gtsam::noiseModel::Base* model);
+
+};
+
+virtual class GPSFactorPair : gtsam::NonlinearFactor{
+  GPSFactorPair(size_t key1, double x1, double y1, double x2, double y2,
+            const gtsam::noiseModel::Base* model);
+
+};
+
+virtual class GPSFactor2D : gtsam::NonlinearFactor{
+  GPSFactor2D(size_t key1, double x, double y,
+            const gtsam::noiseModel::Base* model);
+
 };
 
 #include <gtsam/navigation/Scenario.h>
