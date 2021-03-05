@@ -43,105 +43,111 @@ Vector Base::weight(const Vector& error) const {
 // according to their weight implementation
 
 void Base::reweight(Vector& error) const {
-  if (reweight_ == Block) {
-    const double w = sqrtWeight(error.norm());
+  if (reweight_ == Scalar) {
+    const double w = sqrtWeight(error.norm());// customweight(error);//
     error *= w;
-  } else if(reweight_==Scalar){
+  } else if(reweight_== Block){
     error.array() *= weight(error).cwiseSqrt().array();
   }
-  else {    
-    error.array() *= pairweight(error).cwiseSqrt().array();
+  else {
+    //Vector W = error.cwiseSqrt();
+    error.array() = pairweight(error).cwiseProduct(error).array();
+    //error = sqrtWeight(pairweight(W)).cwiseProduct(error);//.cwiseSqrt().array();
   }
 }
 
 // Reweight n block matrices with one error vector
 void Base::reweight(vector<Matrix> &A, Vector &error) const {
-  if ( reweight_ == Block ) {
+  if ( reweight_ == Scalar ) {
     const double w = sqrtWeight(error.norm());
     for(Matrix& Aj: A) {
       Aj *= w;
     }
     error *= w;
   }
-  else if(reweight_==Scalar){
+  else if(reweight_== Block){
     const Vector W = sqrtWeight(error);
     for(Matrix& Aj: A) {
       vector_scale_inplace(W,Aj);
     }
-    error = W.cwiseProduct(error);
+    error.array() = W.cwiseProduct(error).array();
   }
   else{
-    const Vector W = sqrtWeight(pairweight(error));
+    //Vector W_pre = error.cwiseSqrt();
+    const Vector W = pairweight(error);
     for(Matrix& Aj: A) {
       vector_scale_inplace(W,Aj);
     }
-    error = W.cwiseProduct(error);
+    error.array() = W.cwiseProduct(error).array();
   }
 }
 
 // Reweight one block matrix with one error vector
 void Base::reweight(Matrix &A, Vector &error) const {
-  if ( reweight_ == Block ) {
+  if ( reweight_ == Scalar ) {
     const double w = sqrtWeight(error.norm());
     A *= w;
     error *= w;
   }
-  else if(reweight_==Scalar){
-    const Vector W = sqrtWeight(error);
+  else if(reweight_== Block){
+    Vector W = sqrtWeight(error);
     vector_scale_inplace(W,A);
-    error = W.cwiseProduct(error);
+    error.array() = W.cwiseProduct(error).array();
   }
   else{
-    const Vector W = sqrtWeight(pairweight(error));
+    //Vector W_pre = error.cwiseSqrt();
+    const Vector W = pairweight(error);
     vector_scale_inplace(W,A);
-    error = W.cwiseProduct(error);
+    error.array() = W.cwiseProduct(error).array();
   }
 }
 
 // Reweight two block matrix with one error vector
 void Base::reweight(Matrix &A1, Matrix &A2, Vector &error) const {
-  if ( reweight_ == Block ) {
+  if ( reweight_ == Scalar ) {
     const double w = sqrtWeight(error.norm());
     A1 *= w;
     A2 *= w;
     error *= w;
   }
-  else if(reweight_==Scalar){
+  else if(reweight_== Block){
     const Vector W = sqrtWeight(error);
     vector_scale_inplace(W,A1);
     vector_scale_inplace(W,A2);
-    error = W.cwiseProduct(error);
+    error.array() = W.cwiseProduct(error).array();
   }
   else{
-    const Vector W = sqrtWeight(pairweight(error));
+    //Vector W_pre = error.cwiseSqrt();
+    const Vector W = pairweight(error);
     vector_scale_inplace(W,A1);
     vector_scale_inplace(W,A2);
-    error = W.cwiseProduct(error);
+    error.array() = W.cwiseProduct(error).array();
   }
 }
 
 // Reweight three block matrix with one error vector
 void Base::reweight(Matrix &A1, Matrix &A2, Matrix &A3, Vector &error) const {
-  if ( reweight_ == Block ) {
+  if ( reweight_ == Scalar) {
     const double w = sqrtWeight(error.norm());
     A1 *= w;
     A2 *= w;
     A3 *= w;
     error *= w;
   }
-  else if(reweight_==Scalar){
+  else if(reweight_== Block ){
     const Vector W = sqrtWeight(error);
     vector_scale_inplace(W,A1);
     vector_scale_inplace(W,A2);
     vector_scale_inplace(W,A3);
-    error = W.cwiseProduct(error);
+    error.array() = W.cwiseProduct(error).array();
   }
   else{
-    const Vector W = sqrtWeight(pairweight(error));
+    //Vector W_pre = error.cwiseSqrt();
+    const Vector W = pairweight(error);
     vector_scale_inplace(W,A1);
     vector_scale_inplace(W,A2);
     vector_scale_inplace(W,A3);
-    error = W.cwiseProduct(error);
+    error.array() = W.cwiseProduct(error).array();
   }
 }
 
@@ -417,6 +423,7 @@ PairDCS::PairDCS(double c, const ReweightScheme reweight)
 
 double PairDCS::weight(double error) const {
   const double e2 = error*error;
+  //return e2;
   if (e2 > c_)
   {
     const double w = 2.0*c_/(c_ + e2);
@@ -426,25 +433,48 @@ double PairDCS::weight(double error) const {
   return 1.0;
 }
 
+//double PairDCS::weight(Vector& error) const {
+//    int dim;
+//  if (error.size()==4)dim = 2;
+//  else dim = 3;
+//  const double e2_pair1 = error.head(dim).transpose()*error.head(dim);//error.head(dim).norm();//
+//  const double e2_pair2 = error.tail(dim).transpose()*error.tail(dim);//error.tail(dim).norm();//
+//  const double h_mean = e2_pair1*e2_pair2/(e2_pair1 + e2_pair2);
+//  return c_/(c_+h_mean);
+//}
+double PairDCS::customweight(Vector& error) const {
+  int dim;
+  if (error.size()==4)dim = 2;
+  else dim = 3;
+  const double e2_pair1 = error.head(dim).transpose()*error.head(dim);//error.head(dim).norm();//
+  const double e2_pair2 = error.tail(dim).transpose()*error.tail(dim);//error.tail(dim).norm();//
+  const double h_mean = e2_pair1*e2_pair2/(e2_pair1 + e2_pair2);
+  double s = c_/(c_+h_mean);
+//  if (h_mean>c_) s = 2.0*c_/(c_+h_mean);
+//  else s = 1.0;
+  return s;
+}
 Vector PairDCS::pairweight(Vector& error) const {
 
   int dim;
   if (error.size()==4)dim = 2;
   else dim = 3;
-  const double e2_pair1 = error.head(dim).norm();//error.head(dim).transpose()*error.head(dim);//
-  const double e2_pair2 = error.tail(dim).norm();//error.tail(dim).transpose()*error.tail(dim);//
+  const double e2_pair1 = error.head(dim).transpose()*error.head(dim);//error.head(dim).norm();//
+  const double e2_pair2 = error.tail(dim).transpose()*error.tail(dim);//error.tail(dim).norm();//
   const double h_mean = e2_pair1*e2_pair2/(e2_pair1 + e2_pair2);
-  double s;
+  double s = c_/(c_+h_mean);
   if (h_mean>c_) s = 2.0*c_/(c_+h_mean);
   else s = 1.0;
-  const double c1 = e2_pair2/(e2_pair1 + e2_pair2);
-  const double c2 = e2_pair1/(e2_pair1 + e2_pair2);
+  double c1 = 2.0*e2_pair2/(e2_pair1 + e2_pair2);
+  if (c1>1.0) c1 = 1.0;
+  double c2 = 2.0*e2_pair1/(e2_pair1 + e2_pair2);
+  if (c2>1.0) c2 = 1.0;
 
   if (dim ==2){
-  return (Vector(4) << c1*c1*s*s, c1*c1*s*s, c2*c2*s*s, c2*c2*s*s).finished();
+  return (Vector(4) << c1*s, c1*s, c2*s, c2*s).finished();//s, s, s, s).finished();//c1, c1, c2, c2).finished();//
   }
   else{
-  return (Vector(6) << c1*c1*s*s, c1*c1*s*s, c1*c1*s*s, c2*c2*s*s, c2*c2*s*s, c2*c2*s*s).finished();
+  return (Vector(6) << c1*s, c1*s, c1*s, c2*s, c2*s, c2*s).finished();//s, s, s, s, s, s).finished();//c1, c1, c1, c2, c2, c2).finished();//
   }
 }
 
@@ -457,10 +487,7 @@ double PairDCS::residual(const Vector error) const {
   const double e2_pair2 = error.tail(dim).transpose()*error.tail(dim);//error.tail(dim).norm();//
   const double h_mean = e2_pair1*e2_pair2/(e2_pair1 + e2_pair2);
 
-
-//  return c_/(1+c_*e2);
-//  return (c2*e2 + c_*e4) / ((e2 + c_)*(e2 + c_));
-    return h_mean*c_/(h_mean+c_);
+  return h_mean*c_/(h_mean+c_);//error.transpose()*error;//
 }
 
 void PairDCS::print(const std::string &s="") const {
@@ -475,6 +502,189 @@ bool PairDCS::equals(const Base &expected, double tol) const {
 
 PairDCS::shared_ptr PairDCS::Create(double c, const ReweightScheme reweight) {
   return shared_ptr(new PairDCS(c, reweight));
+}
+
+/* ************************************************************************* */
+// MM for multi-modal
+/* ************************************************************************* */
+MM_multi::MM_multi( double c, const ReweightScheme reweight)
+  : Base(reweight), c_(c){
+}
+
+double MM_multi::weight(double error) const {
+  const double e2 = error*error;
+  if (e2 > c_)
+  {
+    const double w = 2.0*c_/(c_ + e2);
+    return w*w;
+  }
+
+  return 1.0;
+}
+
+Vector MM_multi::pairweight(Vector& error) const {
+
+  int dim;
+  if (error.size()==4)dim = 2;
+  else dim = 3;
+  Vector err1 = error.head(dim);
+  Vector err2 = error.tail(dim);
+  const double e2_pair1 = err1.transpose()*err1;//error.head(dim).norm();//
+  const double e2_pair2 = err2.transpose()*err2;//error.tail(dim).norm();//
+
+  double e2 = e2_pair2;
+  Vector c1 = err2.cwiseProduct(err1.cwiseInverse());//Vector::Zero(dim);// 
+  Vector c2 = err2.cwiseProduct(err2.cwiseInverse());//Vector::Ones(dim);// 
+  if(e2_pair2>e2_pair1){
+    e2 = e2_pair1;
+//    err1 = c1;
+//    c1 = c2;
+//    c2 = err1;
+    c1 = err1.cwiseProduct(err1.cwiseInverse());//Vector::Zero(dim);// 
+    c2 = err1.cwiseProduct(err2.cwiseInverse());//Vector::Ones(dim);// 
+  }
+  //const double e2 = min(e2_pair1, e2_pair2);
+  double s = 1.0;
+  if(e2>c_) s = 2.0*c_/(c_ + e2);
+  if (dim ==2)return (Vector(4) << s*c1(0), s*c1(1), s*c2(0), s*c2(1)).finished();//s*c1,s*c1,s*c2,s*c2).finished();//
+  else return (Vector(6) << s*c1(0), s*c1(1), s*c1(2), s*c2(0), s*c2(1), s*c2(2)).finished();//s*c1,s*c1,s*c1,s*c2,s*c2,s*c2).finished();//
+
+//  if (e2 > log(2*3.141592/(b_*b_))/(a_*a_-b_*b_))
+//  {
+//    const double w = b_*b_/(a_*a_) + log(2*3.141592/(b_*b_))/e2;
+//    if (dim ==2)return (Vector(4) << w, w, w, w).finished();
+//    else return (Vector(6) << w, w, w, w, w, w).finished();
+//  }
+
+//  if (dim ==2)return (Vector(4) << 1.0,1.0,1.0,1.0).finished();
+//  else return (Vector(6) << 1.0,1.0,1.0,1.0,1.0,1.0).finished();
+  
+}
+
+double MM_multi::residual(const Vector error) const {
+
+  int dim = 3;
+  if (error.size()==4)dim = 2;
+  const double e2_pair1 = error.head(dim).transpose()*error.head(dim);//error.head(dim).norm();//
+  const double e2_pair2 = error.tail(dim).transpose()*error.tail(dim);//error.tail(dim).norm();//
+  const double e2 = min(e2_pair1, e2_pair2);
+
+  const double e4 = e2*e2;
+  const double c2 = c_*c_;
+
+  return (c2*e2 + c_*e4) / ((e2 + c_)*(e2 + c_));
+
+//  if (e2 > log(2*3.141592/(b_*b_))/(a_*a_-b_*b_))
+//  {
+//    const double w = b_*b_/(a_*a_)*e2 + log(2*3.141592/(b_*b_));
+//    return w;
+//  }
+
+//  return e2;
+}
+
+void MM_multi::print(const std::string &s="") const {
+  std::cout << s << ": PairDCS (" << c_ << ")" << std::endl;
+}
+
+bool MM_multi::equals(const Base &expected, double tol) const {
+  const MM_multi* p = dynamic_cast<const MM_multi*>(&expected);
+  if (p == NULL) return false;
+  return std::abs(c_ - p->c_) < tol;
+}
+
+MM_multi::shared_ptr MM_multi::Create(double c, const ReweightScheme reweight) {
+  return shared_ptr(new MM_multi(c, reweight));
+}
+
+/* ************************************************************************* */
+// MM
+/* ************************************************************************* */
+MM::MM(double a, double b, const ReweightScheme reweight)
+  : Base(reweight), a_(a), b_(b) {
+}
+
+double MM::weight(double error) const {
+  const double e2 = error*error;
+  if (e2 > log(2*3.141592/(b_*b_))/(a_*a_-b_*b_))
+  {
+    const double w = b_*b_/(a_*a_) + log(2*3.141592/(b_*b_))/e2;
+    return w;
+  }
+
+  return 1.0;
+}
+
+double MM::residual(const Vector error) const {
+  // This is the simplified version of Eq 9 from (Agarwal13icra)
+  // after you simplify and cancel terms.
+  const double e2 = error.norm()*error.norm();
+  if (e2 > log(2*3.141592/(b_*b_))/(a_*a_-b_*b_))
+  {
+    const double w = b_*b_/(a_*a_)*e2 + log(2*3.141592/(b_*b_));
+    return w;
+  }
+
+  return e2;
+}
+
+void MM::print(const std::string &s="") const {
+  std::cout << s << ": MM (" << a_ << ")" << std::endl;
+}
+
+bool MM::equals(const Base &expected, double tol) const {
+  const MM* p = dynamic_cast<const MM*>(&expected);
+  if (p == NULL) return false;
+  return std::abs(a_ - p->a_) < tol;
+}
+
+MM::shared_ptr MM::Create(double a, double b, const ReweightScheme reweight) {
+  return shared_ptr(new MM(a, b, reweight));
+}
+
+/* ************************************************************************* */
+// DCE
+/* ************************************************************************* */
+DCE::DCE(double a, double b, const ReweightScheme reweight)
+  : Base(reweight), a_(a), b_(b) {
+}
+
+double DCE::weight(double error) const {
+  const double e2 = error*error;
+  if (e2 > b_*b_/(a_*a_))
+  {
+    const double w = log(b_*b_/(a_*a_)*e2)/e2 +1.0/e2;
+    return w;
+  }
+
+  return 1.0;
+}
+
+double DCE::residual(const Vector error) const {
+  // This is the simplified version of Eq 9 from (Agarwal13icra)
+  // after you simplify and cancel terms.
+  const double e2 = error.norm()*error.norm();
+  if (e2 > b_*b_/(a_*a_))
+  {
+    const double w = log(b_*b_/(a_*a_)*e2) + 1.0;
+    return w;
+  }
+
+  return e2;
+}
+
+void DCE::print(const std::string &s="") const {
+  std::cout << s << ": MM (" << a_ << ")" << std::endl;
+}
+
+bool DCE::equals(const Base &expected, double tol) const {
+  const DCE* p = dynamic_cast<const DCE*>(&expected);
+  if (p == NULL) return false;
+  return std::abs(a_ - p->a_) < tol;
+}
+
+DCE::shared_ptr DCE::Create(double a, double b, const ReweightScheme reweight) {
+  return shared_ptr(new DCE(a, b, reweight));
 }
 /* ************************************************************************* */
 // L2WithDeadZone

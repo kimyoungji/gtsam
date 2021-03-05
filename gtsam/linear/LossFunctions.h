@@ -91,6 +91,9 @@ class GTSAM_EXPORT Base {
    * robust penalties using iteratively re-weighted least squares.
    */
   virtual double weight(double error) const = 0;
+  //virtual double weight(Vector& error) const = 0;
+  virtual double customweight(Vector& error) const
+  { return 1.0;}
   virtual Vector pairweight(Vector & error) const
   { return error; }
 
@@ -360,11 +363,13 @@ class GTSAM_EXPORT PairDCS : public Base {
   PairDCS(double c = 1.0, const ReweightScheme reweight = Custom);
   ~PairDCS() {}
   double weight(double error) const override;
+//  double weight(Vector& error) const override;
+  double customweight(Vector& error) const override;
   Vector pairweight(Vector& error) const override;
   double residual(const Vector error) const override;
   void print(const std::string &s) const override;
   bool equals(const Base &expected, double tol = 1e-8) const override;
-  static shared_ptr Create(double k, const ReweightScheme reweight = Block);
+  static shared_ptr Create(double k, const ReweightScheme reweight = Scalar);
 
  protected:
   double c_;
@@ -376,6 +381,84 @@ class GTSAM_EXPORT PairDCS : public Base {
   void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
     ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar &BOOST_SERIALIZATION_NVP(c_);
+  }
+};
+
+class GTSAM_EXPORT MM_multi : public Base {
+ public:
+  typedef boost::shared_ptr<MM_multi> shared_ptr;
+
+  MM_multi(double c = 1.0, const ReweightScheme reweight = Scalar);
+  ~MM_multi() {}
+  double weight(double error) const override;
+  Vector pairweight(Vector& error) const override;
+  double residual(const Vector error) const override;
+  void print(const std::string &s) const override;
+  bool equals(const Base &expected, double tol = 1e-8) const override;
+  static shared_ptr Create(double c, const ReweightScheme reweight = Scalar);
+
+ protected:
+  double c_;
+
+ private:
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template <class ARCHIVE>
+  void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
+    ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+    ar &BOOST_SERIALIZATION_NVP(c_);
+  }
+};
+
+class GTSAM_EXPORT MM : public Base {
+ public:
+  typedef boost::shared_ptr<MM> shared_ptr;
+
+  MM(double a = 2.0, double b = 1.0,  const ReweightScheme reweight = Block);
+  ~MM() {}
+  double weight(double error) const override;
+  double residual(const Vector error) const override;
+  void print(const std::string &s) const override;
+  bool equals(const Base &expected, double tol = 1e-8) const override;
+  static shared_ptr Create(double a, double b, const ReweightScheme reweight = Block);
+
+ protected:
+  double a_, b_;
+
+ private:
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template <class ARCHIVE>
+  void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
+    ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+    ar &BOOST_SERIALIZATION_NVP(a_);
+    ar &BOOST_SERIALIZATION_NVP(b_);
+  }
+};
+
+class GTSAM_EXPORT DCE : public Base {
+ public:
+  typedef boost::shared_ptr<DCE> shared_ptr;
+
+  DCE(double a = 2.0, double b = 1.0, const ReweightScheme reweight = Block);
+  ~DCE() {}
+  double weight(double error) const override;
+  double residual(const Vector error) const override;
+  void print(const std::string &s) const override;
+  bool equals(const Base &expected, double tol = 1e-8) const override;
+  static shared_ptr Create(double a, double b, const ReweightScheme reweight = Block);
+
+ protected:
+  double a_, b_;
+
+ private:
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template <class ARCHIVE>
+  void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
+    ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+    ar &BOOST_SERIALIZATION_NVP(a_);
+    ar &BOOST_SERIALIZATION_NVP(b_);
   }
 };
 
